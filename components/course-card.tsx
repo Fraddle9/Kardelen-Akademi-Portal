@@ -63,7 +63,7 @@ export const CourseCard = ({
                         
                     ) : (
                         <p className="text-md md:text-sm font-medium text-slate-700">
-                            {formatPrice(price)}
+                            Kursa Göz Atın.
                         </p>
                     )}
                 </div>

@@ -58,7 +58,6 @@ const CourseIdPage = async ({
         course.title,
         course.description,
         course.imageUrl,
-        course.price,
         course.categoryId,
         course.chapters.some((chapter => chapter.isPublished))
     ];
@@ -138,18 +137,7 @@ const CourseIdPage = async ({
                             />
                         </div>
                     </div>
-                    <div>
-                        <div className="flex items-center gap-x-2">
-                            <IconBadge icon={CircleDollarSign} />
-                            <h2 className="text-xl">
-                                Kurs Fiyatı
-                            </h2>
-                        </div>
-                        <PriceForm
-                            initialData={course}
-                            courseId={course.id}
-                        />
-                    </div>
+
                     <div>
                         <div className="flex items-center gap-x-2">
                             <IconBadge icon={File} />

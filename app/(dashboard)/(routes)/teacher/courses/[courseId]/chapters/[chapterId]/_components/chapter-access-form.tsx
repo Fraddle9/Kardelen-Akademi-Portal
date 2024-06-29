@@ -87,9 +87,9 @@ export const ChapterAccessForm = ({
                     !initialData.isFree && "text-slate-500 italic"
                 )}>
                     {initialData.isFree ? (
-                        <>Bu bölüm ücretsiz olarak erişilebilir</>
+                        <>Bu bölüm ücretsiz olarak herkes tarafından erişilebilir</>
                     ) : (
-                        <>Bu bölüm ücretlidir</>
+                        <>Kursa Kayıt olmayanlar bu bölümü göremez</>
                     )}
                 </div>
             )}

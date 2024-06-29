@@ -1,8 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { formatPrice } from "@/lib/format"
-import axios from "axios";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -12,20 +11,17 @@ interface CourseEnrollButtonProps {
 }
 
 export const CourseEnrollButton = ({
-    price,
     courseId
 }: CourseEnrollButtonProps) => {
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
 
     const onClick = async () => {
         try {
             setIsLoading(true);
+            router.push(`https://kardelenakademi.com/iletisim/`)
 
-            const response = await axios.post(`/api/courses/${courseId}/checkout`, {
-                method: "POST",
-            });
 
-            window.location.assign(response.data.url)
         } catch (error) {
             toast.error("Bir hata oluştu.")
         } finally {
@@ -38,7 +34,7 @@ export const CourseEnrollButton = ({
         disabled={isLoading}
         size="sm"
         className="w-full md:w-auto">
-            Kursa Kaydol {formatPrice(price)}
+            Kursa Kaydolmak İçin Tıklayın!
         </Button>
     )
 }
