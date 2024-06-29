@@ -25,39 +25,25 @@ export const columns: ColumnDef<Course>[] = [
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Title
+            Başlık
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         )
       },
   },
   {
-    accessorKey: "price",
+    accessorKey: "id",
     header: ({ column }) => {
         return (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Price
+            Kurs ID
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         )
       },
-      cell: ({ row }) => {
-        const price = parseFloat(row.getValue("price") || "0");
-        const formatted = new Intl.NumberFormat("tr-TR", {
-            style: "currency",
-            currency: "TRY",
-        }).format(price);
-
-        return(
-            <div>
-                {formatted}
-            </div>
-        )
-
-        }
   },
   {
     accessorKey: "isPublished",
@@ -67,7 +53,7 @@ export const columns: ColumnDef<Course>[] = [
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Published
+            Yayın Durumu
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         )

@@ -1,12 +1,23 @@
 import { db } from "@/lib/db";
 import { isTeacher } from "@/lib/teacher";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     try {
         const { userId } = auth();
-        const { courseId, assignToUserId } = await req.json();
+        const { username, courseId } = await req.json();
+        const { data, totalCount } = await clerkClient.users.getUserList({ username });
+        const users = data; 
+        
+        if (users.length === 0) {
+            console.log("[GET_USER_ID] User not found");
+            return new NextResponse("User not found", { status: 404 });
+        }
+
+        console.log("[GET_USER_ID] username:", username);
+
+        const assignToUserId = users[0].id;
 
         if (!userId || !isTeacher(userId)) {
             return new NextResponse("Unauthorized", { status: 401 });

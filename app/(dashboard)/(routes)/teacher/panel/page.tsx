@@ -28,13 +28,15 @@ const AdminPanel = () => {
     return (
         <div className='flex flex-col items-start'>
             <div className='ml-10'>
-            <h1 className='text-lg font-bold center'>Öğrenci Atama Formu</h1>
+                <h1 className='text-lg font-bold center'>
+                    Öğrenci Atama Formu
+                </h1>
             </div>
-            
+
             <div className='flex items-center'>
                 <AssignCourseForm />
             </div>
-            {/* Buraya diğer admin paneli içeriklerinizi ekleyebilirsiniz */}
+            
         </div>
     );
 }

@@ -4,13 +4,14 @@ import toast from 'react-hot-toast';
 
 const AssignCourseForm = () => {
     const [courseId, setCourseId] = useState('');
-    const [assignToUserId, setAssignToUserId] = useState('');
+    const [username, setUserName] = useState('');
 
     const handleAssignCourse = async () => {
+
         try {
-            const response = await axios.post('/api/assigncourse', {
+            const response = await axios.post('/api/utilities/assigncourse', {
+                username,
                 courseId,
-                assignToUserId,
             });
 
             if (response.status === 200) {
@@ -37,8 +38,8 @@ const AssignCourseForm = () => {
                 <input
                     type="text"
                     placeholder="Kullanıcı ID"
-                    value={assignToUserId}
-                    onChange={(e) => setAssignToUserId(e.target.value)}
+                    value={username}
+                    onChange={(e) => setUserName(e.target.value)}
                     className="text-sm w-50 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 transition duration-300"
                 />
             </div>
