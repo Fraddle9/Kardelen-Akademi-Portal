@@ -36,7 +36,7 @@ export const ChapterVideoForm = ({
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             await axios.patch(`/api/courses/${courseId}/chapters/${chapterId}`, values);
-            toast.success("Bölüm Videosu Güncellendi");
+            toast.success("Video Başarıyla Yüklendi!");
             toggleEdit();
             router.refresh();
         } catch (error) {
@@ -55,7 +55,7 @@ export const ChapterVideoForm = ({
                     {!isEditing && !initialData.videoUrl && (
                         <>
                             <PlusCircle className="w-4 h-4 mr-2" />
-                            Video Ekle
+                            Video Yükle
                         </>
                     
                     )}

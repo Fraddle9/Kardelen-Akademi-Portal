@@ -2,11 +2,38 @@ import Mux from "@mux/mux-node";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { UTApi } from "uploadthing/server";
 
 const mux = new Mux({
     tokenId: process.env.MUX_TOKEN_ID,
     tokenSecret: process.env.MUX_TOKEN_SECRET
 });
+
+async function checkIfMuxAssetExists(assetId: string): Promise<boolean> {
+    try {
+        const asset = await mux.video.assets.retrieve(assetId);
+        return !!asset;  // If the asset is found, return true
+    } catch (error: any) {
+        if (error.status === 404) {
+            return false;  // If the asset is not found, return false
+        }
+        throw error;  // If there is any other error, rethrow it
+    }
+}
+
+async function waitForMuxProcessing(assetId: string): Promise<void> {
+    const checkInterval = 5000; // 5 seconds
+    const maxChecks = 60; // Check for up to 5 minutes
+
+    for (let i = 0; i < maxChecks; i++) {
+        const asset = await mux.video.assets.retrieve(assetId);
+        if (asset.status === 'ready') {
+            return;
+        }
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+    throw new Error('Mux processing timed out');
+}
 
 export async function DELETE(
     req: Request,
@@ -14,6 +41,7 @@ export async function DELETE(
 ) {
     try {
         const { userId } = auth();
+
 
         if (!userId) {
             return new NextResponse("Unauthorized", { status: 401 });
@@ -49,7 +77,10 @@ export async function DELETE(
             });
 
             if (existingMuxData) {
-                await mux.video.assets.delete(existingMuxData.assetId);
+                const assetExists = await checkIfMuxAssetExists(existingMuxData.assetId);
+                if (assetExists) {
+                    await mux.video.assets.delete(existingMuxData.assetId);
+                }
                 await db.muxData.delete({
                     where: {
                         id: existingMuxData.id,
@@ -96,7 +127,8 @@ export async function PATCH(
 ) {
     try {
         const { userId } = auth();
-        const {isPublished, ...values} = await req.json();
+        const { isPublished, ...values } = await req.json();
+        const utapi = new UTApi();
 
         if (!userId) {
             return new NextResponse("Unauthorized", { status: 401 });
@@ -124,34 +156,47 @@ export async function PATCH(
         });
 
         if (values.videoUrl) {
-         const existingMuxData = await db.muxData.findFirst({
+            const existingMuxData = await db.muxData.findFirst({
                 where: {
                     chapterId: params.chapterId,
                 }
             });
-// // // // // // // // // // //
-        if (existingMuxData) {
-            await mux.video.assets.delete(existingMuxData.assetId);
-            await db.muxData.delete({
-                where: {
-                    id: existingMuxData.id,
+
+            if (existingMuxData) {
+                const assetExists = await checkIfMuxAssetExists(existingMuxData.assetId);
+                if (assetExists) {
+                    await mux.video.assets.delete(existingMuxData.assetId);
                 }
-            });
-        }
-
-        const asset = await mux.video.assets.create({
-            input: values.videoUrl,
-            playback_policy: ['public'],
-        });
-
-        await db.muxData.create({
-            data: {
-                chapterId: params.chapterId,
-                assetId: asset.id,
-                playbackId: asset.playback_ids?.[0]?.id ?? '', // Provide a default empty string as fallback
+                
+                await db.muxData.delete({
+                    where: {
+                        id: existingMuxData.id,
+                    }
+                });
             }
-        });
-    }
+
+            const asset = await mux.video.assets.create({ //burda MUXA ekliyo
+                input: values.videoUrl,
+                playback_policy: ['public'],
+            });
+
+            await waitForMuxProcessing(asset.id); // wait until mux has finished processing the asset
+
+            await db.muxData.create({
+                data: {
+                    chapterId: params.chapterId,
+                    assetId: asset.id,
+                    playbackId: asset.playback_ids?.[0]?.id ?? '',
+                }
+            }); //Burda DB ekliyor ve bitiyor ekleme işlemi.
+
+
+            const fileId = values.videoUrl.split('/f/')[1];
+
+            await utapi.deleteFiles([ //Video muxa yüklendikten sonra uploadthingden sil
+                fileId
+            ]);
+        }
 
         return NextResponse.json(chapter);
 
