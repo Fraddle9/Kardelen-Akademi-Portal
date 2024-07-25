@@ -1,47 +1,14 @@
-import Mux from "@mux/mux-node";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { UTApi } from "uploadthing/server";
 
-const mux = new Mux({
-    tokenId: process.env.MUX_TOKEN_ID,
-    tokenSecret: process.env.MUX_TOKEN_SECRET
-});
-
-async function checkIfMuxAssetExists(assetId: string): Promise<boolean> {
-    try {
-        const asset = await mux.video.assets.retrieve(assetId);
-        return !!asset;  // If the asset is found, return true
-    } catch (error: any) {
-        if (error.status === 404) {
-            return false;  // If the asset is not found, return false
-        }
-        throw error;  // If there is any other error, rethrow it
-    }
-}
-
-async function waitForMuxProcessing(assetId: string): Promise<void> {
-    const checkInterval = 5000; // 5 seconds
-    const maxChecks = 60; // Check for up to 5 minutes
-
-    for (let i = 0; i < maxChecks; i++) {
-        const asset = await mux.video.assets.retrieve(assetId);
-        if (asset.status === 'ready') {
-            return;
-        }
-        await new Promise(resolve => setTimeout(resolve, checkInterval));
-    }
-    throw new Error('Mux processing timed out');
-}
-
+// DELETE handler
 export async function DELETE(
     req: Request,
     { params }: { params: { courseId: string; chapterId: string; }; }
 ) {
     try {
         const { userId } = auth();
-
 
         if (!userId) {
             return new NextResponse("Unauthorized", { status: 401 });
@@ -69,32 +36,14 @@ export async function DELETE(
             return new NextResponse("Not Found", { status: 404 });
         }
 
-        if (chapter.videoUrl) {
-            const existingMuxData = await db.muxData.findFirst({
-                where: {
-                    chapterId: params.chapterId,
-                }
-            });
-
-            if (existingMuxData) {
-                const assetExists = await checkIfMuxAssetExists(existingMuxData.assetId);
-                if (assetExists) {
-                    await mux.video.assets.delete(existingMuxData.assetId);
-                }
-                await db.muxData.delete({
-                    where: {
-                        id: existingMuxData.id,
-                    }
-                });
-            }
-        }
-
+        // Delete chapter record
         const deletedChapter = await db.chapter.delete({
             where: {
                 id: params.chapterId,
             }
         });
 
+        // Check if there are any other published chapters
         const publishedChaptersInCourse = await db.chapter.findMany({
             where: {
                 courseId: params.courseId,
@@ -102,6 +51,7 @@ export async function DELETE(
             }
         });
 
+        // Update course publication status
         if (!publishedChaptersInCourse.length) {
             await db.course.update({
                 where: {
@@ -116,19 +66,19 @@ export async function DELETE(
         return NextResponse.json(deletedChapter);
 
     } catch (error) {
-        console.log("Chapter_Id_Delete", error);
+        console.log("Chapter_Delete_Error", error);
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }
 
+// PATCH handler
 export async function PATCH(
     req: Request,
     { params }: { params: { courseId: string; chapterId: string; }; }
 ) {
     try {
         const { userId } = auth();
-        const { isPublished, ...values } = await req.json();
-        const utapi = new UTApi();
+        const { isPublished, videoUrl, ...values } = await req.json();
 
         if (!userId) {
             return new NextResponse("Unauthorized", { status: 401 });
@@ -145,6 +95,7 @@ export async function PATCH(
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
+        // Update chapter details
         const chapter = await db.chapter.update({
             where: {
                 id: params.chapterId,
@@ -152,56 +103,14 @@ export async function PATCH(
             },
             data: {
                 ...values,
+                videoUrl: videoUrl ? videoUrl : undefined,
             }
         });
-
-        if (values.videoUrl) {
-            const existingMuxData = await db.muxData.findFirst({
-                where: {
-                    chapterId: params.chapterId,
-                }
-            });
-
-            if (existingMuxData) {
-                const assetExists = await checkIfMuxAssetExists(existingMuxData.assetId);
-                if (assetExists) {
-                    await mux.video.assets.delete(existingMuxData.assetId);
-                }
-                
-                await db.muxData.delete({
-                    where: {
-                        id: existingMuxData.id,
-                    }
-                });
-            }
-
-            const asset = await mux.video.assets.create({ //burda MUXA ekliyo
-                input: values.videoUrl,
-                playback_policy: ['public'],
-            });
-
-            await waitForMuxProcessing(asset.id); // wait until mux has finished processing the asset
-
-            await db.muxData.create({
-                data: {
-                    chapterId: params.chapterId,
-                    assetId: asset.id,
-                    playbackId: asset.playback_ids?.[0]?.id ?? '',
-                }
-            }); //Burda DB ekliyor ve bitiyor ekleme işlemi.
-
-
-            const fileId = values.videoUrl.split('/f/')[1];
-
-            await utapi.deleteFiles([ //Video muxa yüklendikten sonra uploadthingden sil
-                fileId
-            ]);
-        }
 
         return NextResponse.json(chapter);
 
     } catch (error) {
-        console.log("Chapter_Id", error);
+        console.log("Chapter_Update_Error", error);
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }

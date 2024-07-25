@@ -127,7 +127,9 @@ const ChapterIdPage = async ({
                         </h2>
                     </div>
                     <ChapterVideoForm       
-                    initialData={chapter}
+                    initialData={{
+                        videoUrl: chapter.videoUrl || undefined, // Convert null to undefined
+                    }}
                     courseId={params.courseId}
                     chapterId={params.chapterId}
                     />
@@ -137,7 +139,6 @@ const ChapterIdPage = async ({
         </div>
         </>
     );
-    
 }
 
 export default ChapterIdPage;
