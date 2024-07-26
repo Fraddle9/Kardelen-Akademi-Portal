@@ -1,48 +1,34 @@
-import Mux from "@mux/mux-node"
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { isTeacher } from "@/lib/teacher";
 
-const mux = new Mux({
-    tokenId: process.env.MUX_TOKEN_ID,
-    tokenSecret: process.env.MUX_TOKEN_SECRET
-});
-
 export async function DELETE(
     req: Request,
-    {params} : {params: {courseId: string}}
+    { params }: { params: { courseId: string; } }
 ) {
     try {
-        const {userId} = auth();
+        const { userId } = auth();
 
         if (!userId || !isTeacher(userId)) {
-            return new NextResponse("Unauthorized", {status: 401})
+            return new NextResponse("Unauthorized", { status: 401 });
         }
 
         const course = await db.course.findUnique({
             where: {
                 id: params.courseId,
-                userId: userId
+                userId: userId,
             },
             include: {
-                chapters: {
-                    include: {
-                        muxData: true
-                    }
-                }
+                chapters: true
             }
         });
 
         if (!course) {
-            return new NextResponse("Not Found", {status: 404});
+            return new NextResponse("Not Found", { status: 404 });
         }
 
-        for (const chapter of course.chapters) {
-            if (chapter.muxData?.assetId) {
-                await mux.video.assets.delete(chapter.muxData.assetId);
-            }
-        }
+        // If needed, add logic here to clean up any related resources
 
         const deletedCourse = await db.course.delete({
             where: {
@@ -50,30 +36,29 @@ export async function DELETE(
             }
         });
 
-        return NextResponse.json(deletedCourse)
+        return NextResponse.json(deletedCourse);
 
     } catch (error) {
         console.log("[COURSE_ID_DELETE]", error);
-        return new NextResponse("Error api-courses-courseid-routets", {status: 500});
+        return new NextResponse("Internal Server Error", { status: 500 });
     }
 }
 
 export async function PATCH(
     req: Request,
-    {params} : {params: {courseId: string}}
+    { params }: { params: { courseId: string; } }
 ) {
     try {
-        const {userId} = auth();
-        const {courseId} = params;
+        const { userId } = auth();
         const values = await req.json();
 
         if (!userId || !isTeacher(userId)) {
-            return new NextResponse("Unauthorized", {status: 401})
+            return new NextResponse("Unauthorized", { status: 401 });
         }
 
         const course = await db.course.update({
             where: {
-                id: courseId,
+                id: params.courseId,
                 userId
             },
             data: {
@@ -84,7 +69,7 @@ export async function PATCH(
         return NextResponse.json(course);
 
     } catch (error) {
-        console.log("[COURSE_ID]", error);
-        return new NextResponse("Error api-courses-courseid-routets", {status: 500});
+        console.log("[COURSE_ID_PATCH]", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
     }
 }
