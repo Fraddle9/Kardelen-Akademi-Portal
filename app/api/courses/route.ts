@@ -3,6 +3,25 @@ import { isTeacher } from "@/lib/teacher";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+export async function GET(req: Request) {
+    try {
+        const courses = await db.course.findMany({
+            where: {
+                isPublished: true,
+            },
+            select: {
+                id: true,
+                title: true,
+            },
+        });
+
+        return NextResponse.json(courses);
+    } catch (error) {
+        console.log("[GET_COURSES]", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
+    }
+}
+
 export async function POST(
     req: Request,
 ) {

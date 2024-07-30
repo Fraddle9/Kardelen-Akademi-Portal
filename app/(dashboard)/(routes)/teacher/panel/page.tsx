@@ -13,11 +13,17 @@ const AdminPanel = () => {
 
     useEffect(() => {
         if (!isSignedIn) {
+
             router.push("/");
+
         } else if (userId && isTeacher(userId)) {
+
             setAuthorized(true);
+
         } else {
+
             router.push("/");
+
         }
     }, [userId, isSignedIn, router]);
 
@@ -36,7 +42,7 @@ const AdminPanel = () => {
             <div className='flex items-center'>
                 <AssignCourseForm />
             </div>
-            
+
         </div>
     );
 }

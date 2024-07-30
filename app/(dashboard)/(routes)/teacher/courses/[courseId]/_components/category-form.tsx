@@ -103,6 +103,7 @@ export const CategoryForm = ({
                                 <FormItem>
                                     <FormControl>
                                         <Combobox
+                                        placeholder="Kategori Seçin"
                                             options={options}
                                             {...field}
                                         />

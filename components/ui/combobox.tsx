@@ -20,15 +20,19 @@ import {
 } from "@/components/ui/popover"
 
 interface ComboboxProps {
-  options: { label: string; value: string;}[];
+  options: { label: string; value: string; }[];
   value?: string;
   onChange: (value: string) => void;
+  placeholder?: string;
+  selectedText?: string;
 }
 
 export const Combobox = ({
   options,
   value,
-  onChange
+  onChange,
+  placeholder = "Bir seçenek seçin",
+  selectedText = "Seçiniz",
 }: ComboboxProps) => {
   const [open, setOpen] = React.useState(false)
 
@@ -42,8 +46,8 @@ export const Combobox = ({
           className="w-full justify-between"
         >
           {value
-            ? options.find((option) => option.value === value)?.label
-            : "Kategori seçin..."}
+            ? options.find((option) => option.value === value)?.label || selectedText
+            : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -52,26 +56,25 @@ export const Combobox = ({
           <CommandInput placeholder="Search option..." />
           <CommandEmpty>Seçenek bulunmadı</CommandEmpty>
           <CommandList>
-          <CommandGroup>
-            {options.map((option) => (
-              <CommandItem
-                key={option.value}
-                // value={option.value}
-                onSelect={() => {
-                  onChange(option.value === value ? "" : option.value)
-                  setOpen(false)
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === option.value ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {option.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  onSelect={() => {
+                    onChange(option.value === value ? "" : option.value)
+                    setOpen(false)
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === option.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
